@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  /* Deep slate gradient backdrop for the whole app. */
+  background: radial-gradient(
+      1200px 800px at 50% -10%,
+      #1e1b4b 0%,
+      transparent 60%
+    ),
+    #0b0f1a;
+  color: #e5e7eb;
+}
+
+/* Slim, theme-matched scrollbars for the chat transcript. */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
