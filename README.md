@@ -248,46 +248,46 @@ For each prompt Identify what capability is being tested (e.g., *summarization a
 
 **1. Prompt:**  
 Explain the concept of object-oriented programming in simple terms to a complete beginner.  
-**Aspect Tested:**  <!-- Write your answer here -->
+**Aspect Tested:** Conceptual explanation & pedagogical clarity — can the model simplify a technical topic for a novice, use intuitive analogies, and avoid jargon?
 
 **Response:**  
-<!-- Add your app's response here -->
+<!-- TODO: paste the app's response (run this prompt in the deployed app) -->
 
 ---
 
 **2. Prompt:**  
-Read the following paragraph and provide a concise summary of the key points…  
-**Aspect Tested:**  
+Read the following paragraph and provide a concise summary of the key points: *"Cloud computing has transformed how organizations manage IT infrastructure. Instead of buying and maintaining physical servers, companies rent computing resources on demand from providers like AWS, Azure, and Google Cloud, paying only for what they use. This elasticity lets teams scale up during traffic spikes and scale down to save money during quiet periods. It also shifts responsibility for hardware maintenance, security patching, and uptime to the provider, freeing engineers to focus on building products rather than racking servers."*  
+**Aspect Tested:** Summarization & information compression — can the model extract the key points from a passage and restate them faithfully and concisely without hallucinating?
 
 **Response:**  
-<!-- Add your app's response here -->
+<!-- TODO: paste the app's response (run this prompt in the deployed app) -->
 
 ---
 
 **3. Prompt:**  
 Write a short, imaginative story (100–150 words) about a robot finding friendship in an unexpected place.  
-**Aspect Tested:**  <!-- Write your answer here -->
+**Aspect Tested:** Creativity & constraint-following — narrative imagination and coherence, *and* whether it respects the 100–150 word limit.
 
 **Response:**  
-<!-- Add your app's response here -->
+<!-- TODO: paste the app's response (run this prompt in the deployed app) -->
 
 ---
 
 **4. Prompt:**  
 If a store sells apples in packs of 4 and oranges in packs of 3, how many packs of each do I need to buy to get exactly 12 apples and 9 oranges?  
-**Aspect Tested:**  <!-- Write your answer here -->
+**Aspect Tested:** Quantitative reasoning & constraint satisfaction — basic arithmetic (12 ÷ 4 = **3** apple packs; 9 ÷ 3 = **3** orange packs) with a clearly justified answer.
 
 **Response:**  
-<!-- Add your app's response here -->
+<!-- TODO: paste the app's response (run this prompt in the deployed app) -->
 
 ---
 
 **5. Prompt:**  
-Rewrite the following paragraph in a professional, formal tone…  
-**Aspect Tested:**  <!-- Write your answer here -->
+Rewrite the following paragraph in a professional, formal tone: *"hey so i looked at the bug u mentioned and yeah it's def a problem. i think we shld just patch it before friday cuz the client is gonna freak if it breaks again lol. lemme know if u want me to take care of it or if someone else is on it."*  
+**Aspect Tested:** Tone & style transformation — instruction following and register control (shifting to a formal voice while preserving the original meaning).
 
 **Response:**  
-<!-- Add your app's response here -->
+<!-- TODO: paste the app's response (run this prompt in the deployed app) -->
 
 ---
 
@@ -296,37 +296,38 @@ Rewrite the following paragraph in a professional, formal tone…
 Do the answers appear to be correct and useful?
 
 **Your Answer:**  
-<!-- Write your answer here -->
+*(Draft — confirm against your actual run.)* For these general-capability prompts, `gpt-4.1-mini` is expected to do well across the board: the OOP explanation should be clear and analogy-driven, the summary accurate and concise, the story within the 100–150 word limit, the math correct (**3** packs of apples and **3** packs of oranges), and the rewrite appropriately formal while keeping the original meaning. The main thing to watch for is the **word-count constraint** on the story (small models sometimes drift over/under) and whether the summary stays faithful without adding facts. Replace this note with your own judgement once you've pasted the responses above. 👀
 
 ---
 
 ## 🏗️ Activity #2: Personal Use Vibe Check
 
 Now test your app with **real-world prompts that are relevant to your use case**.
+My use case is **software / AI engineering**, so these probe code review, AI architecture decisions, and system design.
 
 ---
 
 **Prompt:**  
-<!-- Your prompt -->
+Review this Python function and point out any bugs or edge cases, then show a more robust version: `def average(nums): return sum(nums) / len(nums)`
 
 **Result:**  
-<!-- App response -->
+<!-- TODO: paste the app's response. (Expected: it should flag the ZeroDivisionError on an empty list, maybe note non-numeric inputs, and return a guarded version.) -->
 
 ---
 
 **Prompt:**  
-<!-- Your prompt -->
+I want my LLM app to answer questions about my company's internal documentation. Should I use retrieval-augmented generation (RAG) or fine-tuning? Explain the trade-offs.
 
 **Result:**  
-<!-- App response -->
+<!-- TODO: paste the app's response. (Expected: RAG for fresh/changing facts + citations + lower cost; fine-tuning for style/format/behavior; mention they're complementary.) -->
 
 ---
 
 **Prompt:**  
-<!-- Your prompt -->
+How would you design a rate limiter for a public REST API? Walk me through the main approaches and their trade-offs.
 
 **Result:**  
-<!-- App response -->
+<!-- TODO: paste the app's response. (Expected: token bucket / leaky bucket / fixed & sliding window, plus where to enforce (gateway vs app) and distributed state via Redis.) -->
 
 ---
 
@@ -335,7 +336,7 @@ Now test your app with **real-world prompts that are relevant to your use case**
 Are the vibes of your assistant aligned with your expectations? Why or why not?
 
 **Your Answer:**  
-<!-- Write your answer here -->
+*(Draft — confirm against your actual run.)* The default persona is *"a helpful, friendly AI assistant — be clear and concise,"* so I expect approachable, well-structured, to-the-point technical answers (good use of bullets and code blocks, which the UI renders as Markdown). For an engineering use case this is a solid baseline. If I want sharper, more senior-level answers, I can tighten the **system prompt** in ⚙️ Settings (e.g., *"You are a senior staff engineer; be precise, call out trade-offs, and prefer production-ready code"*) or switch to a stronger model like `gpt-4.1` / `gpt-5`. Update this with your take after running the prompts.
 
 ---
 
@@ -353,18 +354,18 @@ Examples:
 ---
 
 **Prompt:**  
-<!-- Your prompt -->
+What's the current weather in London right now, and what are today's top tech headlines?
 
 **Result:**  
-<!-- App response -->
+<!-- TODO: paste the app's response. (Expected: it can't fetch live data — it should say it lacks real-time access rather than inventing weather/headlines.) -->
 
 ---
 
 **Prompt:**  
-<!-- Your prompt -->
+What did I ask you about in our chat yesterday, and what's on my calendar for tomorrow?
 
 **Result:**  
-<!-- App response -->
+<!-- TODO: paste the app's response. (Expected: no cross-session memory and no calendar access — it should admit it can't recall past sessions or see your calendar.) -->
 
 ---
 
@@ -373,7 +374,16 @@ Examples:
 What are some limitations of your application?
 
 **Your Answer:**  
-<!-- Write your answer here -->
+This app is a thin, stateless wrapper around the OpenAI Chat Completions API, so its limits follow directly from that design:
+
+- **No real-time / live data.** The model only knows what was in its training data up to its cutoff, and the app has no web search or external APIs. It can't answer about current weather, news, prices, or anything happening "now."
+- **Memory is session-only.** The conversation lives in the browser and is replayed to the model each turn, which gives *in-session* memory — but nothing persists across page reloads or sessions, so it can't recall "yesterday."
+- **No tools or actions.** It can't read your files, check your calendar, browse the web, send email, or run code. It only generates text.
+- **No grounding / RAG.** Answers come purely from the model's parameters, so it can hallucinate and can't cite your private documents.
+- **External dependencies.** It needs a valid OpenAI API key and network access; rate limits, model availability (e.g., `gpt-5` access), and outages all affect it.
+- **Single, unauthenticated endpoint.** There's no login or per-user state, and CORS is wide open — fine for a demo, not for production.
+
+Most of these are *addressable* — see the improvement ideas below.
 
 ---
 
@@ -384,12 +394,19 @@ Based on your vibe check, try improving your application:
 - Change the model
 - Add features
 
+**💡 Ideas mapped to the limitations above:**
+- **Beat the knowledge cutoff** → add a web-search / news tool and let the model call it (function calling).
+- **Ground answers in your docs** → add RAG: embed your documents, retrieve relevant chunks, and stuff them into the prompt.
+- **Real memory** → persist conversations (localStorage or a DB) and add a "history" sidebar.
+- **Sharper answers** → tune the system prompt in ⚙️ Settings, or bump the model to `gpt-4.1` / `gpt-5`.
+- **Production hardening** → lock down CORS to your domain, add auth, and rate-limit the `/api/chat` endpoint.
+
 Then rerun your vibe check and document:
 
 ---
 
 **Adjustments Made:**  
-<!-- Describe what you changed -->
+<!-- Describe what you changed (e.g., "tightened the system prompt to a senior-engineer persona and switched to gpt-4.1") -->
 
 **Results:**  
 <!-- What improved? What didn’t? -->
