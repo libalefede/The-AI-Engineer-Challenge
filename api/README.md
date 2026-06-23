@@ -1,122 +1,91 @@
-# OpenAI Chat API Backend
+# 🧠 OpenAI Chat API Backend
 
-This is a FastAPI-based backend service that provides a chat interface using OpenAI's API. The service acts as a supportive mental coach, helping users with stress, motivation, habits, and confidence.
+A tiny [FastAPI](https://fastapi.tiangolo.com/) service that proxies chat
+requests to the OpenAI Chat Completions API and **streams** the answer back
+token-by-token. It powers the Next.js frontend in this repo and runs happily
+both locally and as a Vercel Python serverless function.
 
 ## Prerequisites
 
 - [`uv`](https://github.com/astral-sh/uv) package manager (`pip install uv`)
-- `uv` will provision Python 3.12 automatically for this project, so no separate interpreter installation is required
-- An OpenAI API key available as the `OPENAI_API_KEY` environment variable when you run the server
+- `uv` provisions Python 3.12 automatically — no separate interpreter needed
+- An OpenAI API key (used either via `OPENAI_API_KEY` or passed per-request)
 
-## Setup
+## Setup & running locally
 
-All commands below assume you are running them from the repository root.
-
-1. Install dependencies into a local virtual environment managed by `uv`:
+All commands assume you're at the repository root.
 
 ```bash
+# 1. Install dependencies into a uv-managed .venv
 uv sync
-```
 
-2. (Optional) Activate the virtual environment if you prefer to run commands manually:
+# 2. Give it your key (or paste one into the app UI later)
+export OPENAI_API_KEY=sk-your-key-here
 
-```bash
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-```
-
-`uv` will create the `.venv` directory automatically on first sync and download Python 3.12 if it's not already available.
-
-## Running the Server
-
-Start the FastAPI app with the dependencies managed by `uv`:
-
-```bash
+# 3. Start the server with auto-reload
 uv run uvicorn api.index:app --reload
 ```
 
-This runs the app with `uvicorn` on `http://localhost:8000` with auto-reload enabled for development. The server will automatically restart when you make changes to the code.
+The API now listens on `http://localhost:8000`.
 
-**Note:** Make sure the `OPENAI_API_KEY` environment variable is set in your shell before launching the server. You can set it with:
+> Stuck on "Address already in use"? Free port 8000 with
+> `lsof -ti:8000 | xargs kill -9`.
 
-```bash
-export OPENAI_API_KEY=sk-your-key-here
-```
+## API endpoints
 
-If you encounter an "Address already in use" error, you may need to kill existing processes on port 8000:
+### `POST /api/chat`
 
-```bash
-lsof -ti:8000 | xargs kill -9
-```
+Streams a chat completion as `text/plain` chunks.
 
-## API Endpoints
+**Request body**
 
-### Chat Endpoint
-- **URL**: `/api/chat`
-- **Method**: POST
-- **Request Body**:
 ```json
 {
-    "message": "string"
-}
-```
-- **Response**: JSON object with the AI's reply:
-```json
-{
-    "reply": "string"
+  "messages": [
+    { "role": "user", "content": "Hello!" },
+    { "role": "assistant", "content": "Hi there!" },
+    { "role": "user", "content": "Tell me a joke." }
+  ],
+  "developer_message": "You are a witty stand-up comedian.",
+  "model": "gpt-4.1-mini",
+  "api_key": "sk-... (optional — overrides OPENAI_API_KEY)"
 }
 ```
 
-The chat endpoint uses OpenAI's GPT-5 model with a supportive mental coach system prompt to provide helpful responses.
+| Field               | Required | Default                                  | Notes                                            |
+| ------------------- | -------- | ---------------------------------------- | ------------------------------------------------ |
+| `messages`          | ✅       | —                                        | Full conversation so the model has session memory |
+| `developer_message` | ❌       | `"You are a helpful, friendly AI assistant."` | The system/persona prompt                    |
+| `model`             | ❌       | `"gpt-4.1-mini"`                         | Any OpenAI chat model your key can access        |
+| `api_key`           | ❌       | server's `OPENAI_API_KEY`                | Per-request override; never stored               |
 
-### Root Endpoint
-- **URL**: `/`
-- **Method**: GET
-- **Response**: `{"status": "ok"}`
+**Response** — a streamed plain-text body. Read it incrementally on the client
+to render tokens as they arrive.
 
-### Health Check
-- **URL**: `/api/health`
-- **Method**: GET
-- **Response**: `{"status": "ok"}`
+### `GET /api/health` and `GET /`
 
-## API Documentation
+Both return `{"status": "ok"}` for quick liveness checks.
 
-Once the server is running, you can access the interactive API documentation at:
+## Interactive docs
+
+With the server running, explore the auto-generated docs at:
+
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
-## CORS Configuration
-
-The API is configured to accept requests from any origin (`*`). This can be modified in the `index.py` file if you need to restrict access to specific domains.
-
-## Error Handling
-
-The API includes basic error handling for:
-- Invalid API keys
-- OpenAI API errors
-- General server errors
-
-All errors will return a 500 status code with an error message.
-
-## Testing the API
-
-Once your server is running, you can test the chat endpoint using curl:
+## Test it with curl
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/chat \
+curl -N -X POST http://127.0.0.1:8000/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "Hello"}'
+  -d '{"messages":[{"role":"user","content":"Say hi in one sentence."}]}'
 ```
 
-You should receive a JSON response with the AI's reply:
+The `-N` flag disables buffering so you can watch the response stream in.
 
-```json
-{
-  "reply": "Hi! It's good to hear from you. What's on your mind today?..."
-}
-```
+## Notes
 
-You can also test the health check endpoint:
-
-```bash
-curl http://127.0.0.1:8000/api/health
-```
+- **CORS** is wide open (`*`) for painless local + preview development. Lock it
+  down to your own domain in `index.py` for production.
+- **Errors** from OpenAI are streamed back inline as `[Error contacting OpenAI: ...]`
+  so they surface directly in the chat UI; a missing key returns HTTP 400.
