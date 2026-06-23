@@ -16,6 +16,56 @@ In this repository, we'll walk you through the steps to create a LLM (Large Lang
 
 Are you ready? Let's get started!
 
+---
+
+## 🛠️ What's Inside (This Build)
+
+This repo ships a **complete, deployable chat app** — not just scaffolding:
+
+| Layer        | Tech                                            | What it does                                              |
+| ------------ | ----------------------------------------------- | --------------------------------------------------------- |
+| 🧠 Backend   | FastAPI ([`/api/index.py`](api/index.py))       | Streams chat completions from OpenAI, token-by-token      |
+| 💬 Frontend  | Next.js 14 + TypeScript + Tailwind (`app/`)     | Streaming chat UI with model picker & custom persona      |
+| ☁️ Deploy    | Vercel ([`vercel.json`](vercel.json))           | One project, two runtimes (Node + Python serverless)      |
+
+**Highlights:** live streaming responses · in-session memory · pick your model (`gpt-4.1-mini` → `gpt-5`) · editable system prompt · optional bring-your-own-key (password-masked, never stored) · Markdown rendering.
+
+## 🏃 Quickstart (Local)
+
+Open **two terminals** from the repo root.
+
+**1) Backend** — FastAPI on port 8000:
+
+```bash
+uv sync
+export OPENAI_API_KEY=sk-your-key-here   # or paste a key in the app's ⚙️ Settings
+uv run uvicorn api.index:app --reload
+```
+
+**2) Frontend** — Next.js on port 3000:
+
+```bash
+npm install
+npm run dev
+```
+
+Now open **http://localhost:3000**. In dev, the frontend transparently proxies
+`/api/*` to the backend, so everything works from one tab. 🎉
+
+> More detail lives in [`api/README.md`](api/README.md) (backend) and
+> [`frontend/README.md`](frontend/README.md) (frontend).
+
+## 🚀 Deploy to Vercel
+
+The frontend and the Python API deploy together as **one** Vercel project.
+
+1. Push this repo to GitHub (it's already your fork 😉).
+2. Import the repo at [vercel.com/new](https://vercel.com/new) — Vercel auto-detects Next.js.
+3. Add an environment variable **`OPENAI_API_KEY`** (or let users paste their own key in the UI).
+4. Deploy. `vercel.json` routes `/api/*` to the Python function and everything else to Next.js.
+
+Prefer the CLI? `npm i -g vercel && vercel` from the repo root does the same thing.
+
 <details>
   <summary>🖥️ Accessing "gpt-4.1-mini" (ChatGPT) like a developer</summary>
 
