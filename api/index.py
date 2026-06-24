@@ -1,7 +1,7 @@
 """FastAPI backend for the AI Engineer Challenge chat app.
 
-Exposes a single streaming chat endpoint that talks to the OpenAI Chat
-Completions API. It is intentionally small so it can run both locally
+Exposes a single streaming chat endpoint that talks to Anthropic's Claude
+Messages API. It is intentionally small so it can run both locally
 (`uv run uvicorn api.index:app --reload`) and as a Vercel Python
 serverless function (see `vercel.json`).
 """
@@ -13,7 +13,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from openai import OpenAI
+import anthropic
 from dotenv import load_dotenv
 
 # Load variables from a local .env file when developing.
@@ -31,6 +31,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Cap the response length. We stream, so this is a safety ceiling rather than
+# an expected size — plenty of headroom for chat-style answers.
+MAX_TOKENS = 8192
+
 
 class Message(BaseModel):
     """A single turn in the conversation."""
@@ -46,8 +50,8 @@ class ChatRequest(BaseModel):
     messages: List[Message] = Field(..., min_length=1)
     # The "system"/persona prompt that shapes the assistant's behaviour.
     developer_message: str = "You are a helpful, friendly AI assistant."
-    # Which OpenAI model to use. Defaults to a fast, widely-available model.
-    model: str = "gpt-4.1-mini"
+    # Which Claude model to use. Defaults to the most capable current Claude.
+    model: str = "claude-opus-4-8"
     # Optional per-request key. If omitted, we fall back to the server env var.
     api_key: Optional[str] = None
 
@@ -55,13 +59,13 @@ class ChatRequest(BaseModel):
 def _resolve_api_key(request_key: Optional[str]) -> str:
     """Prefer a key supplied by the request, else the server environment."""
 
-    key = (request_key or "").strip() or os.getenv("OPENAI_API_KEY")
+    key = (request_key or "").strip() or os.getenv("ANTHROPIC_API_KEY")
     if not key:
         raise HTTPException(
             status_code=400,
             detail=(
-                "No OpenAI API key found. Set OPENAI_API_KEY on the server "
-                "or paste a key into the app's settings."
+                "No Anthropic API key found. Set ANTHROPIC_API_KEY on the "
+                "server or paste a key into the app's settings."
             ),
         )
     return key
@@ -81,24 +85,23 @@ def health():
 def chat(request: ChatRequest):
     """Stream a chat completion back to the client as plain-text chunks."""
 
-    client = OpenAI(api_key=_resolve_api_key(request.api_key))
+    client = anthropic.Anthropic(api_key=_resolve_api_key(request.api_key))
 
-    # Prepend the persona prompt, then replay the conversation history.
-    messages = [{"role": "system", "content": request.developer_message}]
-    messages += [{"role": m.role, "content": m.content} for m in request.messages]
+    # Claude takes the persona as a top-level `system` string and the
+    # conversation as alternating user/assistant turns.
+    messages = [{"role": m.role, "content": m.content} for m in request.messages]
 
     def token_stream():
         try:
-            stream = client.chat.completions.create(
+            with client.messages.stream(
                 model=request.model,
+                max_tokens=MAX_TOKENS,
+                system=request.developer_message,
                 messages=messages,
-                stream=True,
-            )
-            for chunk in stream:
-                delta = chunk.choices[0].delta.content
-                if delta:
-                    yield delta
+            ) as stream:
+                for text in stream.text_stream:
+                    yield text
         except Exception as exc:  # surface a readable error to the UI
-            yield f"\n\n[Error contacting OpenAI: {exc}]"
+            yield f"\n\n[Error contacting Anthropic: {exc}]"
 
     return StreamingResponse(token_stream(), media_type="text/plain")

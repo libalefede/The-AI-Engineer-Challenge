@@ -12,7 +12,7 @@ interface SettingsPanelProps {
 
 /**
  * Collapsible settings drawer: pick the model, shape the assistant's persona
- * with a system prompt, and optionally paste an OpenAI key. The key uses a
+ * with a system prompt, and optionally paste an Anthropic key. The key uses a
  * password-style input and is kept in memory only (never persisted).
  */
 export default function SettingsPanel({
@@ -72,14 +72,14 @@ export default function SettingsPanel({
         {/* Optional API key (password-style, in-memory only) */}
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-slate-300">
-            OpenAI API key{" "}
+            Anthropic API key{" "}
             <span className="font-normal text-slate-500">(optional)</span>
           </span>
           <input
             type="password"
             value={apiKey}
             onChange={(e) => onApiKeyChange(e.target.value)}
-            placeholder="sk-…  (leave blank to use the server's key)"
+            placeholder="sk-ant-…  (leave blank to use the server's key)"
             autoComplete="off"
             className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/40"
           />

@@ -7,6 +7,7 @@ import ChatInput from "./components/ChatInput";
 import {
   DEFAULT_MODEL,
   DEFAULT_SYSTEM_PROMPT,
+  MODELS,
   type ChatMessage,
   type Model,
 } from "./types";
@@ -31,11 +32,14 @@ export default function Home() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Restore non-sensitive settings from a previous visit.
+  // Restore non-sensitive settings from a previous visit. Ignore a stale saved
+  // model that's no longer in the list (e.g. left over from an older version).
   useEffect(() => {
-    const savedModel = localStorage.getItem("model") as Model | null;
+    const savedModel = localStorage.getItem("model");
     const savedPrompt = localStorage.getItem("systemPrompt");
-    if (savedModel) setModel(savedModel);
+    if (savedModel && (MODELS as readonly string[]).includes(savedModel)) {
+      setModel(savedModel as Model);
+    }
     if (savedPrompt) setSystemPrompt(savedPrompt);
   }, []);
 
@@ -81,6 +85,12 @@ export default function Home() {
         }),
       });
 
+      // Session expired or not logged in — bounce to the login page.
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
       if (!res.ok || !res.body) {
         const detail = await res
           .json()
@@ -117,6 +127,11 @@ export default function Home() {
     } finally {
       setIsStreaming(false);
     }
+  }
+
+  async function handleLogout() {
+    await fetch("/auth/logout", { method: "POST" }).catch(() => {});
+    window.location.href = "/login";
   }
 
   const lastMessage = messages[messages.length - 1];
@@ -157,6 +172,12 @@ export default function Home() {
               aria-expanded={showSettings}
             >
               ⚙️ Settings
+            </button>
+            <button
+              onClick={handleLogout}
+              className="rounded-md px-3 py-1.5 text-sm text-slate-300 transition hover:bg-slate-800"
+            >
+              Log out
             </button>
           </div>
         </div>
@@ -216,7 +237,7 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
           Start a conversation
         </h2>
         <p className="mt-1 text-sm text-slate-400">
-          Powered by FastAPI + OpenAI. Try one of these, or ask anything.
+          Powered by FastAPI + Claude. Try one of these, or ask anything.
         </p>
       </div>
       <div className="grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-2">

@@ -1,15 +1,16 @@
-# 🧠 OpenAI Chat API Backend
+# 🧠 Claude Chat API Backend
 
 A tiny [FastAPI](https://fastapi.tiangolo.com/) service that proxies chat
-requests to the OpenAI Chat Completions API and **streams** the answer back
-token-by-token. It powers the Next.js frontend in this repo and runs happily
-both locally and as a Vercel Python serverless function.
+requests to Anthropic's [Claude Messages API](https://docs.claude.com/) and
+**streams** the answer back token-by-token. It powers the Next.js frontend in
+this repo and runs happily both locally and as a Vercel Python serverless
+function.
 
 ## Prerequisites
 
 - [`uv`](https://github.com/astral-sh/uv) package manager (`pip install uv`)
 - `uv` provisions Python 3.12 automatically — no separate interpreter needed
-- An OpenAI API key (used either via `OPENAI_API_KEY` or passed per-request)
+- An Anthropic API key (used either via `ANTHROPIC_API_KEY` or passed per-request)
 
 ## Setup & running locally
 
@@ -20,7 +21,7 @@ All commands assume you're at the repository root.
 uv sync
 
 # 2. Give it your key (or paste one into the app UI later)
-export OPENAI_API_KEY=sk-your-key-here
+export ANTHROPIC_API_KEY=sk-ant-your-key-here
 
 # 3. Start the server with auto-reload
 uv run uvicorn api.index:app --reload
@@ -47,20 +48,25 @@ Streams a chat completion as `text/plain` chunks.
     { "role": "user", "content": "Tell me a joke." }
   ],
   "developer_message": "You are a witty stand-up comedian.",
-  "model": "gpt-4.1-mini",
-  "api_key": "sk-... (optional — overrides OPENAI_API_KEY)"
+  "model": "claude-opus-4-8",
+  "api_key": "sk-ant-... (optional — overrides ANTHROPIC_API_KEY)"
 }
 ```
 
 | Field               | Required | Default                                  | Notes                                            |
 | ------------------- | -------- | ---------------------------------------- | ------------------------------------------------ |
 | `messages`          | ✅       | —                                        | Full conversation so the model has session memory |
-| `developer_message` | ❌       | `"You are a helpful, friendly AI assistant."` | The system/persona prompt                    |
-| `model`             | ❌       | `"gpt-4.1-mini"`                         | Any OpenAI chat model your key can access        |
-| `api_key`           | ❌       | server's `OPENAI_API_KEY`                | Per-request override; never stored               |
+| `developer_message` | ❌       | `"You are a helpful, friendly AI assistant."` | The Claude `system` prompt                   |
+| `model`             | ❌       | `"claude-opus-4-8"`                      | Any Claude model your key can access             |
+| `api_key`           | ❌       | server's `ANTHROPIC_API_KEY`             | Per-request override; never stored               |
 
 **Response** — a streamed plain-text body. Read it incrementally on the client
 to render tokens as they arrive.
+
+Under the hood this calls `client.messages.stream(...)` with the official
+[`anthropic`](https://github.com/anthropics/anthropic-sdk-python) SDK, passing
+`developer_message` as Claude's top-level `system` prompt and the conversation
+as alternating user/assistant turns.
 
 ### `GET /api/health` and `GET /`
 
@@ -87,5 +93,7 @@ The `-N` flag disables buffering so you can watch the response stream in.
 
 - **CORS** is wide open (`*`) for painless local + preview development. Lock it
   down to your own domain in `index.py` for production.
-- **Errors** from OpenAI are streamed back inline as `[Error contacting OpenAI: ...]`
+- **Errors** from Anthropic are streamed back inline as `[Error contacting Anthropic: ...]`
   so they surface directly in the chat UI; a missing key returns HTTP 400.
+- The deployed app also sits behind a **login gate** — see the root README for
+  the `APP_PASSWORD` setup.
