@@ -24,11 +24,12 @@ This repo ships a **complete, deployable chat app** — not just scaffolding:
 
 | Layer        | Tech                                            | What it does                                              |
 | ------------ | ----------------------------------------------- | --------------------------------------------------------- |
-| 🧠 Backend   | FastAPI ([`/api/index.py`](api/index.py))       | Streams chat completions from OpenAI, token-by-token      |
+| 🧠 Backend   | FastAPI ([`/api/index.py`](api/index.py))       | Streams responses from **Claude** (Anthropic), token-by-token |
 | 💬 Frontend  | Next.js 14 + TypeScript + Tailwind (`app/`)     | Streaming chat UI with model picker & custom persona      |
+| 🔒 Auth      | Next.js middleware ([`middleware.ts`](middleware.ts)) | Shared-password login gate over every page + the API |
 | ☁️ Deploy    | Vercel ([`vercel.json`](vercel.json))           | One project, two runtimes (Node + Python serverless)      |
 
-**Highlights:** live streaming responses · in-session memory · pick your model (`gpt-4.1-mini` → `gpt-5`) · editable system prompt · optional bring-your-own-key (password-masked, never stored) · Markdown rendering.
+**Highlights:** live streaming responses · in-session memory · pick your Claude model (`claude-opus-4-8` / `claude-sonnet-4-6` / `claude-haiku-4-5`) · editable system prompt · optional bring-your-own-key (password-masked, never stored) · Markdown rendering · password-gated access.
 
 ## 🏃 Quickstart (Local)
 
@@ -38,7 +39,7 @@ Open **two terminals** from the repo root.
 
 ```bash
 uv sync
-export OPENAI_API_KEY=sk-your-key-here   # or paste a key in the app's ⚙️ Settings
+export ANTHROPIC_API_KEY=sk-ant-your-key-here   # or paste a key in the app's ⚙️ Settings
 uv run uvicorn api.index:app --reload
 ```
 
@@ -46,6 +47,8 @@ uv run uvicorn api.index:app --reload
 
 ```bash
 npm install
+# Optional: turn on the login gate locally (omit it and the app is open)
+export APP_PASSWORD=letmein
 npm run dev
 ```
 
@@ -55,13 +58,28 @@ Now open **http://localhost:3000**. In dev, the frontend transparently proxies
 > More detail lives in [`api/README.md`](api/README.md) (backend) and
 > [`frontend/README.md`](frontend/README.md) (frontend).
 
+## 🔒 The Login Gate
+
+The whole app — every page **and** the `/api/chat` endpoint — sits behind a
+**shared-password gate**, implemented in [`middleware.ts`](middleware.ts):
+
+- Set **`APP_PASSWORD`** and users must enter it at `/login` before they can chat.
+- On success, an `httpOnly` cookie holding `sha256(APP_PASSWORD)` is set — the
+  password never reaches the browser and the cookie can't be forged.
+- **Leave `APP_PASSWORD` unset and the gate is disabled** (handy for local dev).
+
+Want individual user accounts instead of one shared password? Swap the
+middleware for [Auth.js](https://authjs.dev/) — the gate is deliberately small.
+
 ## 🚀 Deploy to Vercel
 
 The frontend and the Python API deploy together as **one** Vercel project.
 
 1. Push this repo to GitHub (it's already your fork 😉).
 2. Import the repo at [vercel.com/new](https://vercel.com/new) — Vercel auto-detects Next.js.
-3. Add an environment variable **`OPENAI_API_KEY`** (or let users paste their own key in the UI).
+3. Add environment variables:
+   - **`ANTHROPIC_API_KEY`** — your Claude key (or let users paste their own in the UI).
+   - **`APP_PASSWORD`** — the shared login password (omit to leave the app open).
 4. Deploy. `vercel.json` routes `/api/*` to the Python function and everything else to Next.js.
 
 Prefer the CLI? `npm i -g vercel && vercel` from the repo root does the same thing.
@@ -138,7 +156,7 @@ Got everything in place? Let's move on!
 
 1. Install the [`uv`](https://github.com/astral-sh/uv) package manager (`pip install uv`). `uv` will download and manage Python 3.12 for you the first time you run a project command.
 2. From the project root, install dependencies with `uv sync`. This creates `.venv/` (and fetches Python 3.12 automatically if needed).
-3. Set your OpenAI API key in the shell before running the server, for example `export OPENAI_API_KEY=sk-...`.
+3. Set your Anthropic API key in the shell before running the server, for example `export ANTHROPIC_API_KEY=sk-ant-...`.
 4. Start the backend directly from the project root with `uv run uvicorn api.index:app --reload`. The server will run on `http://localhost:8000` with auto-reload enabled for development.
 5. Additional backend details live in `api/README.md`.
 
@@ -296,7 +314,7 @@ Rewrite the following paragraph in a professional, formal tone: *"hey so i looke
 Do the answers appear to be correct and useful?
 
 **Your Answer:**  
-*(Draft — confirm against your actual run.)* For these general-capability prompts, `gpt-4.1-mini` is expected to do well across the board: the OOP explanation should be clear and analogy-driven, the summary accurate and concise, the story within the 100–150 word limit, the math correct (**3** packs of apples and **3** packs of oranges), and the rewrite appropriately formal while keeping the original meaning. The main thing to watch for is the **word-count constraint** on the story (small models sometimes drift over/under) and whether the summary stays faithful without adding facts. Replace this note with your own judgement once you've pasted the responses above. 👀
+*(Draft — confirm against your actual run.)* For these general-capability prompts, `claude-opus-4-8` is expected to do well across the board: the OOP explanation should be clear and analogy-driven, the summary accurate and concise, the story within the 100–150 word limit, the math correct (**3** packs of apples and **3** packs of oranges), and the rewrite appropriately formal while keeping the original meaning. The main thing to watch for is the **word-count constraint** on the story and whether the summary stays faithful without adding facts. Replace this note with your own judgement once you've pasted the responses above. 👀
 
 ---
 
@@ -336,7 +354,7 @@ How would you design a rate limiter for a public REST API? Walk me through the m
 Are the vibes of your assistant aligned with your expectations? Why or why not?
 
 **Your Answer:**  
-*(Draft — confirm against your actual run.)* The default persona is *"a helpful, friendly AI assistant — be clear and concise,"* so I expect approachable, well-structured, to-the-point technical answers (good use of bullets and code blocks, which the UI renders as Markdown). For an engineering use case this is a solid baseline. If I want sharper, more senior-level answers, I can tighten the **system prompt** in ⚙️ Settings (e.g., *"You are a senior staff engineer; be precise, call out trade-offs, and prefer production-ready code"*) or switch to a stronger model like `gpt-4.1` / `gpt-5`. Update this with your take after running the prompts.
+*(Draft — confirm against your actual run.)* The default persona is *"a helpful, friendly AI assistant — be clear and concise,"* so I expect approachable, well-structured, to-the-point technical answers (good use of bullets and code blocks, which the UI renders as Markdown). For an engineering use case this is a solid baseline. If I want sharper, more senior-level answers, I can tighten the **system prompt** in ⚙️ Settings (e.g., *"You are a senior staff engineer; be precise, call out trade-offs, and prefer production-ready code"*) — or trade depth for speed/cost by switching the model to `claude-sonnet-4-6` or `claude-haiku-4-5`. Update this with your take after running the prompts.
 
 ---
 
@@ -374,14 +392,14 @@ What did I ask you about in our chat yesterday, and what's on my calendar for to
 What are some limitations of your application?
 
 **Your Answer:**  
-This app is a thin, stateless wrapper around the OpenAI Chat Completions API, so its limits follow directly from that design:
+This app is a thin, stateless wrapper around Anthropic's Claude Messages API, so its limits follow directly from that design:
 
 - **No real-time / live data.** The model only knows what was in its training data up to its cutoff, and the app has no web search or external APIs. It can't answer about current weather, news, prices, or anything happening "now."
 - **Memory is session-only.** The conversation lives in the browser and is replayed to the model each turn, which gives *in-session* memory — but nothing persists across page reloads or sessions, so it can't recall "yesterday."
 - **No tools or actions.** It can't read your files, check your calendar, browse the web, send email, or run code. It only generates text.
 - **No grounding / RAG.** Answers come purely from the model's parameters, so it can hallucinate and can't cite your private documents.
-- **External dependencies.** It needs a valid OpenAI API key and network access; rate limits, model availability (e.g., `gpt-5` access), and outages all affect it.
-- **Single, unauthenticated endpoint.** There's no login or per-user state, and CORS is wide open — fine for a demo, not for production.
+- **External dependencies.** It needs a valid Anthropic API key and network access; rate limits, model availability, and outages all affect it.
+- **Coarse access control.** Access is gated by a single **shared password** (no per-user accounts), and CORS is wide open — fine for a gated demo, but not multi-tenant production.
 
 Most of these are *addressable* — see the improvement ideas below.
 
@@ -398,15 +416,16 @@ Based on your vibe check, try improving your application:
 - **Beat the knowledge cutoff** → add a web-search / news tool and let the model call it (function calling).
 - **Ground answers in your docs** → add RAG: embed your documents, retrieve relevant chunks, and stuff them into the prompt.
 - **Real memory** → persist conversations (localStorage or a DB) and add a "history" sidebar.
-- **Sharper answers** → tune the system prompt in ⚙️ Settings, or bump the model to `gpt-4.1` / `gpt-5`.
-- **Production hardening** → lock down CORS to your domain, add auth, and rate-limit the `/api/chat` endpoint.
+- **Sharper answers** → tune the system prompt in ⚙️ Settings, or switch the model (`claude-opus-4-8` for depth, `claude-haiku-4-5` for speed).
+- **Real accounts** → swap the shared-password gate for [Auth.js](https://authjs.dev/) to get per-user logins and state.
+- **Production hardening** → lock down CORS to your domain and rate-limit the `/api/chat` endpoint.
 
 Then rerun your vibe check and document:
 
 ---
 
 **Adjustments Made:**  
-<!-- Describe what you changed (e.g., "tightened the system prompt to a senior-engineer persona and switched to gpt-4.1") -->
+<!-- Describe what you changed (e.g., "tightened the system prompt to a senior-engineer persona and switched from claude-opus-4-8 to claude-sonnet-4-6") -->
 
 **Results:**  
 <!-- What improved? What didn’t? -->
@@ -437,7 +456,7 @@ Here's a template to get your post started!
 ```
 🚀🎉 Exciting News! 🎉🚀
 
-🏗️ Today, I'm thrilled to announce that I've successfully built and shipped my first-ever LLM using the powerful combination of , and the OpenAI API! 🖥️
+🏗️ Today, I'm thrilled to announce that I've successfully built and shipped my first-ever LLM using the powerful combination of Next.js, FastAPI, and the Anthropic (Claude) API! 🖥️
 
 Check it out 👇
 [LINK TO APP]
