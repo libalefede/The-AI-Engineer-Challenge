@@ -29,6 +29,12 @@ uv run uvicorn api.index:app --reload
 
 The API now listens on `http://localhost:8000`.
 
+> **Using a gateway in front of Claude?** Set `ANTHROPIC_BASE_URL` (e.g. an
+> Azure API Management URL like `https://…azure-api.net/claude/anthropic`) and
+> let `ANTHROPIC_API_KEY` hold the gateway's **subscription key**. The SDK then
+> sends it as the `subscription-key` query parameter, and `model` should be the
+> gateway's **deployment name**.
+
 > Stuck on "Address already in use"? Free port 8000 with
 > `lsof -ti:8000 | xargs kill -9`.
 
@@ -48,7 +54,7 @@ Streams a chat completion as `text/plain` chunks.
     { "role": "user", "content": "Tell me a joke." }
   ],
   "developer_message": "You are a witty stand-up comedian.",
-  "model": "claude-opus-4-8",
+  "model": "claude-sonnet-4-6",
   "api_key": "sk-ant-... (optional — overrides ANTHROPIC_API_KEY)"
 }
 ```
@@ -57,7 +63,7 @@ Streams a chat completion as `text/plain` chunks.
 | ------------------- | -------- | ---------------------------------------- | ------------------------------------------------ |
 | `messages`          | ✅       | —                                        | Full conversation so the model has session memory |
 | `developer_message` | ❌       | `"You are a helpful, friendly AI assistant."` | The Claude `system` prompt                   |
-| `model`             | ❌       | `"claude-opus-4-8"`                      | Any Claude model your key can access             |
+| `model`             | ❌       | `"claude-sonnet-4-6"`                    | A Claude model ID, or your gateway's deployment name |
 | `api_key`           | ❌       | server's `ANTHROPIC_API_KEY`             | Per-request override; never stored               |
 
 **Response** — a streamed plain-text body. Read it incrementally on the client

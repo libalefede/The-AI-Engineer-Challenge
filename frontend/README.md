@@ -12,7 +12,7 @@ So this folder is just the signpost — the action is one level up. ☝️
 
 - **Streaming responses** — watch answers appear word-by-word.
 - **Session memory** — the whole conversation is sent each turn, so it remembers context.
-- **Model picker** — swap between `claude-opus-4-8`, `claude-sonnet-4-6`, and `claude-haiku-4-5`.
+- **Model picker** — `claude-sonnet-4-6` (add more in `app/types.ts` if your endpoint exposes them).
 - **Custom persona** — edit the system prompt to change the assistant's vibe.
 - **Bring-your-own-key** — paste an Anthropic key (password-masked, never stored) or rely on the server's `ANTHROPIC_API_KEY`.
 - **Markdown rendering** — code blocks, lists, and emphasis look right.

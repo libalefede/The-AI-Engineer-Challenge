@@ -35,6 +35,11 @@ app.add_middleware(
 # an expected size — plenty of headroom for chat-style answers.
 MAX_TOKENS = 8192
 
+# Optional custom endpoint. Set this to talk to a gateway in front of Claude
+# (e.g. an Azure API Management proxy) instead of api.anthropic.com. When set,
+# the key is treated as the gateway's `subscription-key` query parameter.
+ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL")
+
 
 class Message(BaseModel):
     """A single turn in the conversation."""
@@ -50,25 +55,37 @@ class ChatRequest(BaseModel):
     messages: List[Message] = Field(..., min_length=1)
     # The "system"/persona prompt that shapes the assistant's behaviour.
     developer_message: str = "You are a helpful, friendly AI assistant."
-    # Which Claude model to use. Defaults to the most capable current Claude.
-    model: str = "claude-opus-4-8"
+    # Which Claude model / deployment to use.
+    model: str = "claude-sonnet-4-6"
     # Optional per-request key. If omitted, we fall back to the server env var.
     api_key: Optional[str] = None
 
 
-def _resolve_api_key(request_key: Optional[str]) -> str:
-    """Prefer a key supplied by the request, else the server environment."""
+def _build_client(request_key: Optional[str]) -> anthropic.Anthropic:
+    """Build an Anthropic client, honouring an optional gateway base URL.
+
+    The key comes from the request (if supplied) or the server environment.
+    When ANTHROPIC_BASE_URL points at a gateway, the key is also sent as the
+    `subscription-key` query parameter that the gateway expects.
+    """
 
     key = (request_key or "").strip() or os.getenv("ANTHROPIC_API_KEY")
     if not key:
         raise HTTPException(
             status_code=400,
             detail=(
-                "No Anthropic API key found. Set ANTHROPIC_API_KEY on the "
-                "server or paste a key into the app's settings."
+                "No API key found. Set ANTHROPIC_API_KEY on the server "
+                "or paste a key into the app's settings."
             ),
         )
-    return key
+
+    if ANTHROPIC_BASE_URL:
+        return anthropic.Anthropic(
+            api_key=key,
+            base_url=ANTHROPIC_BASE_URL,
+            default_query={"subscription-key": key},
+        )
+    return anthropic.Anthropic(api_key=key)
 
 
 @app.get("/")
@@ -85,7 +102,7 @@ def health():
 def chat(request: ChatRequest):
     """Stream a chat completion back to the client as plain-text chunks."""
 
-    client = anthropic.Anthropic(api_key=_resolve_api_key(request.api_key))
+    client = _build_client(request.api_key)
 
     # Claude takes the persona as a top-level `system` string and the
     # conversation as alternating user/assistant turns.

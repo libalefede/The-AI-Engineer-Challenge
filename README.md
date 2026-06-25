@@ -29,7 +29,7 @@ This repo ships a **complete, deployable chat app** — not just scaffolding:
 | 🔒 Auth      | Next.js middleware ([`middleware.ts`](middleware.ts)) | Shared-password login gate over every page + the API |
 | ☁️ Deploy    | Vercel ([`vercel.json`](vercel.json))           | One project, two runtimes (Node + Python serverless)      |
 
-**Highlights:** live streaming responses · in-session memory · pick your Claude model (`claude-opus-4-8` / `claude-sonnet-4-6` / `claude-haiku-4-5`) · editable system prompt · optional bring-your-own-key (password-masked, never stored) · Markdown rendering · password-gated access.
+**Highlights:** live streaming responses · in-session memory · `claude-sonnet-4-6` (via Anthropic's API or a gateway) · editable system prompt · optional bring-your-own-key (password-masked, never stored) · Markdown rendering · password-gated access.
 
 ## 🏃 Quickstart (Local)
 
@@ -40,6 +40,9 @@ Open **two terminals** from the repo root.
 ```bash
 uv sync
 export ANTHROPIC_API_KEY=sk-ant-your-key-here   # or paste a key in the app's ⚙️ Settings
+# Using a gateway in front of Claude (e.g. an Azure APIM proxy)? Add:
+# export ANTHROPIC_BASE_URL=https://your-gateway.azure-api.net/claude/anthropic
+# …and set ANTHROPIC_API_KEY to the gateway's subscription key instead.
 uv run uvicorn api.index:app --reload
 ```
 
@@ -71,6 +74,16 @@ The whole app — every page **and** the `/api/chat` endpoint — sits behind a
 Want individual user accounts instead of one shared password? Swap the
 middleware for [Auth.js](https://authjs.dev/) — the gate is deliberately small.
 
+## 🛰️ Talking to Claude (direct or via a gateway)
+
+The backend uses the official `anthropic` SDK and works two ways:
+
+- **Direct** — set `ANTHROPIC_API_KEY` to an `sk-ant-…` key and it calls `api.anthropic.com`.
+- **Through a gateway** — set `ANTHROPIC_BASE_URL` to a proxy in front of Claude
+  (e.g. an **Azure API Management** endpoint). The SDK then sends `ANTHROPIC_API_KEY`
+  as the gateway's `subscription-key` query parameter, and `model` is the gateway's
+  **deployment name** (this build ships with `claude-sonnet-4-6`).
+
 ## 🚀 Deploy to Vercel
 
 The frontend and the Python API deploy together as **one** Vercel project.
@@ -78,7 +91,8 @@ The frontend and the Python API deploy together as **one** Vercel project.
 1. Push this repo to GitHub (it's already your fork 😉).
 2. Import the repo at [vercel.com/new](https://vercel.com/new) — Vercel auto-detects Next.js.
 3. Add environment variables:
-   - **`ANTHROPIC_API_KEY`** — your Claude key (or let users paste their own in the UI).
+   - **`ANTHROPIC_API_KEY`** — your Claude key *or* gateway subscription key (or let users paste their own in the UI).
+   - **`ANTHROPIC_BASE_URL`** — *(optional)* your gateway URL, if you're not calling Anthropic directly.
    - **`APP_PASSWORD`** — the shared login password (omit to leave the app open).
 4. Deploy. `vercel.json` routes `/api/*` to the Python function and everything else to Next.js.
 
@@ -314,7 +328,7 @@ Rewrite the following paragraph in a professional, formal tone: *"hey so i looke
 Do the answers appear to be correct and useful?
 
 **Your Answer:**  
-*(Draft — confirm against your actual run.)* For these general-capability prompts, `claude-opus-4-8` is expected to do well across the board: the OOP explanation should be clear and analogy-driven, the summary accurate and concise, the story within the 100–150 word limit, the math correct (**3** packs of apples and **3** packs of oranges), and the rewrite appropriately formal while keeping the original meaning. The main thing to watch for is the **word-count constraint** on the story and whether the summary stays faithful without adding facts. Replace this note with your own judgement once you've pasted the responses above. 👀
+*(Draft — confirm against your actual run.)* For these general-capability prompts, `claude-sonnet-4-6` is expected to do well across the board: the OOP explanation should be clear and analogy-driven, the summary accurate and concise, the story within the 100–150 word limit, the math correct (**3** packs of apples and **3** packs of oranges), and the rewrite appropriately formal while keeping the original meaning. The main thing to watch for is the **word-count constraint** on the story and whether the summary stays faithful without adding facts. Replace this note with your own judgement once you've pasted the responses above. 👀
 
 ---
 
@@ -354,7 +368,7 @@ How would you design a rate limiter for a public REST API? Walk me through the m
 Are the vibes of your assistant aligned with your expectations? Why or why not?
 
 **Your Answer:**  
-*(Draft — confirm against your actual run.)* The default persona is *"a helpful, friendly AI assistant — be clear and concise,"* so I expect approachable, well-structured, to-the-point technical answers (good use of bullets and code blocks, which the UI renders as Markdown). For an engineering use case this is a solid baseline. If I want sharper, more senior-level answers, I can tighten the **system prompt** in ⚙️ Settings (e.g., *"You are a senior staff engineer; be precise, call out trade-offs, and prefer production-ready code"*) — or trade depth for speed/cost by switching the model to `claude-sonnet-4-6` or `claude-haiku-4-5`. Update this with your take after running the prompts.
+*(Draft — confirm against your actual run.)* The default persona is *"a helpful, friendly AI assistant — be clear and concise,"* so I expect approachable, well-structured, to-the-point technical answers (good use of bullets and code blocks, which the UI renders as Markdown). For an engineering use case `claude-sonnet-4-6` is a strong baseline. If I want sharper, more senior-level answers, I can tighten the **system prompt** in ⚙️ Settings (e.g., *"You are a senior staff engineer; be precise, call out trade-offs, and prefer production-ready code"*). Update this with your take after running the prompts.
 
 ---
 
@@ -416,7 +430,7 @@ Based on your vibe check, try improving your application:
 - **Beat the knowledge cutoff** → add a web-search / news tool and let the model call it (function calling).
 - **Ground answers in your docs** → add RAG: embed your documents, retrieve relevant chunks, and stuff them into the prompt.
 - **Real memory** → persist conversations (localStorage or a DB) and add a "history" sidebar.
-- **Sharper answers** → tune the system prompt in ⚙️ Settings, or switch the model (`claude-opus-4-8` for depth, `claude-haiku-4-5` for speed).
+- **Sharper answers** → tune the system prompt in ⚙️ Settings (or expose more model deployments on your gateway and add them to the picker).
 - **Real accounts** → swap the shared-password gate for [Auth.js](https://authjs.dev/) to get per-user logins and state.
 - **Production hardening** → lock down CORS to your domain and rate-limit the `/api/chat` endpoint.
 
@@ -425,7 +439,7 @@ Then rerun your vibe check and document:
 ---
 
 **Adjustments Made:**  
-<!-- Describe what you changed (e.g., "tightened the system prompt to a senior-engineer persona and switched from claude-opus-4-8 to claude-sonnet-4-6") -->
+<!-- Describe what you changed (e.g., "tightened the system prompt to a senior-engineer persona") -->
 
 **Results:**  
 <!-- What improved? What didn’t? -->
