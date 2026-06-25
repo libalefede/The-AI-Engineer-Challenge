@@ -175,3 +175,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .DS_Store
+
+# Local env files that hold real secrets — never commit these (.env.example is the safe template)
+*.env
+.env.local
+!.env.example
